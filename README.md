@@ -7,6 +7,12 @@ A functional game of Battleship of a player against a CPU
 3. Use javac *.java to compile the source code
 4. Run using: java Main
 
+Alternatively:
+- Open Visual Studio Code
+- Click File -> Open Folder - click on "battleship"
+- Access the Main.java file
+- Press F5
+  
 # Rules and additional notes
 - Player places 10 ships of varying length from 1 to 4 on a 10x10 board
 - The CPU will also have its ships placed randomly
