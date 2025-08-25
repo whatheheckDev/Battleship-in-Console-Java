@@ -1,10 +1,6 @@
 package com.example;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Random;
-import java.util.Scanner;
+import java.util.*;
 
 public class Main {
     static char[][] cpu_field = new char[10][10];
@@ -26,17 +22,21 @@ public class Main {
         int turn = 0;
         int[] cpu_list = genCords();
         int[][] cpu_cords = getCords(cpu_list);
-        int cpu_dir = 0;
+        int cpu_dir = -1;
         int cpu_parity = 1;
+        boolean cpu_hit = false;
+        int dir_check = 0;
         HashMap<int[], Integer> cpu_moves = new HashMap<int[], Integer>();
         int[] cpu_choice = new int[2];
-
+        int length = 0;
+        int[] max_len = { 0, 0, 0, 0 };
         while (true) {
             System.out.println("Player: ");
             printBoard(self_field);
             System.out.println("");
             System.out.println("CPU: ");
             printBoard(cpu_field);
+
             if (turn == 0) {
                 System.out.println("Your turn");
                 System.out.println("");
@@ -58,9 +58,13 @@ public class Main {
 
                     }
                 } else {
+                    if (cpu_field[v_cord][h_cord] == 'x') {
+                        System.out.println("....but you already hit it");
+                    }
                     cpu_field[v_cord][h_cord] = 'x';
                     turn = 1;
                 }
+
                 if (win_count == 20) {
                     printBoard(cpu_field);
                     System.out.println("You won");
@@ -71,7 +75,29 @@ public class Main {
             else {
                 System.out.println("CPU's turn");
                 System.out.println(" ");
-                cpu_choice = cpuChoice(cpu_moves, cpu_choice, cpu_parity, cpu_dir);
+                
+                if (cpu_hit && length >= 1) {
+                    if (cpu_choice[1] <= 0 & cpu_dir == 3) {
+                        cpu_dir = 4;
+                    } else if (cpu_choice[1] >= 9 & cpu_dir == 1) {
+                        cpu_dir = 2;
+                    } else if (cpu_choice[0] <= 0 && cpu_dir == 2) {
+                        cpu_dir = 3;
+                        if (dir_check == 1) {
+                            cpu_dir = 4;
+                        }
+                    } else if (cpu_choice[0] >= 9 && cpu_dir == 0) {
+                        cpu_dir = 1;
+                    }
+                }
+
+                if (cpu_dir == 4) {
+                    length = 1;
+                    cpu_hit = false;
+                    cpu_dir = -1;
+                    dir_check = 0;
+                }
+                cpu_choice = cpuChoice(cpu_choice, cpu_parity, cpu_dir, cpu_hit, dir_check, length);
                 int h_cord = cpu_choice[0];
                 int v_cord = cpu_choice[1];
                 char h_cord_out = (char) (h_cord + 'a');
@@ -81,19 +107,139 @@ public class Main {
                 if (check) {
                     if (self_field[v_cord][h_cord] == '-') {
                         self_field[v_cord][h_cord] = 'o';
-                    } else {
+                        length++;
+                        lose_count++;
+                        switch (cpu_dir) {
+                            case -1:
+                                cpu_dir++;
+                                cpu_hit = true;
+                                break;
+                            case 0:
+                                if (length == 2) {
+                                    dir_check = 1;
+                                }
+                                break;
+                            case 1:
+                                if (length == 2) {
+                                    dir_check = 2;
+                                }
+                                break;
+                        }
+                        
+                        
+                    } else if(self_field[v_cord][h_cord] == 'o') {
                         System.out.println("But it already hit it");
-                        cpu_parity++;
+                        int coordinate_hit = cpu_choice[0] * 10 + cpu_choice[1];
+                        int coordinate_real = (cpu_parity * 2) - 2;
+                        if (coordinate_hit >= coordinate_real) {
+                            cpu_parity++;
+                        }
+                        cpu_hit = false;
+                        cpu_dir = -1;
+                        dir_check = 0;
+                        length = 0;
+                        
+
+                        
                     }
 
-                    cpu_moves.put(cpu_choice, 1);
                 } else {
-                    self_field[v_cord][h_cord] = 'x';
-                    cpu_parity++;
-                    turn = 0;
-                    cpu_moves.put(cpu_choice, 0);
+                    if (self_field[v_cord][h_cord] == '-') {
+                        self_field[v_cord][h_cord] = 'x';
+                        
+                        if (cpu_hit) {
+                            switch (cpu_dir) {
+                                case 0:
+                                    if (dir_check == 1) {
+                                        cpu_dir += 2;
+                                        cpu_choice[0] -= (length);
+
+                                    } else {
+                                        cpu_dir++;
+                                        cpu_choice[0]--;
+                                    }
+
+                                    break;
+                                case 1:
+                                    if (dir_check == 2) {
+                                        cpu_dir += 2;
+                                        cpu_choice[1] -= (length);
+
+                                    } else {
+                                        cpu_dir++;
+                                        cpu_choice[1]--;
+                                    }
+
+                                    break;
+                                case 2:
+                                    if (dir_check == 1) {
+                                        cpu_dir = -1;
+                                        cpu_hit = false;
+                                        length = 0;
+                                        dir_check = 0;
+                                        cpu_parity++;
+                                    } else {
+                                        cpu_dir++;
+                                    }
+                                    cpu_choice[0]++;
+                                    break;
+                                case 3:
+                                    cpu_dir = -1;
+                                    cpu_hit = false;
+                                    length = 0;
+                                    dir_check = 0;
+                                    cpu_parity++;
+                                    break;
+                            }
+
+                        }
+                        turn = 0;
+                        
+                    } else if (self_field[v_cord][h_cord] == 'x') {
+                        System.out.println("But it already hit it");
+                        cpu_parity++;
+                        cpu_hit = false;
+                        cpu_dir = -1;
+                    }
                 }
-                
+                if (length == 4) {
+                    length = 0;
+                    cpu_hit = false;
+                    cpu_dir = -1;
+                    dir_check = 0;
+                    cpu_parity++;
+                    max_len[0]++;
+                }
+                else if (length == 3 && max_len[0] == 1) {
+                    length = 0;
+                    cpu_hit = false;
+                    cpu_dir = -1;
+                    dir_check = 0;
+                    cpu_parity++;
+                    max_len[1]++;
+                }
+                else if (length == 2 && max_len[1] == 2) {
+                    length = 0;
+                    cpu_hit = false;
+                    cpu_dir = -1;
+                    dir_check = 0;
+                    cpu_parity++;
+                    max_len[2]++;
+                }
+                else if (max_len[2] == 3) {
+                    length = 0;
+                    cpu_hit = false;
+                    cpu_dir = -1;
+                    dir_check = 0;
+                    cpu_parity++;
+                }
+
+                if (lose_count == 20) {
+                    printBoard(self_field);
+                    System.out.println("You lost");
+                    break;
+                    
+                }
 
             }
 
@@ -214,8 +360,8 @@ public class Main {
     public static int[][] getCords(int[] cords) {
         int[][] res = new int[20][2];
         for (int i = 0; i < 20; i++) {
-            res[i][0] = cords[i] / 10;
-            res[i][1] = cords[i] % 10;
+            res[i][0] = cords[i] % 10;
+            res[i][1] = cords[i] / 10;
         }
         return res;
 
@@ -336,7 +482,7 @@ public class Main {
                 if (i < 6) {
                     System.out.println("Choose the direction: u - up, d - down, l -left, r - right");
                     dir[i] = direction(sc);
-                    
+
                 } else {
                     dir[i] = 0;
                 }
@@ -356,6 +502,28 @@ public class Main {
                 }
             }
         }
+        for (int i = 0; i < 4; i++) {
+            cords[i] = ships[0][i];
+        }
+        for (int i = 4; i < 7; i++) {
+            cords[i] = ships[1][i - 4];
+        }
+        for (int i = 7; i < 10; i++) {
+            cords[i] = ships[2][i - 7];
+        }
+        for (int i = 10; i < 12; i++) {
+            cords[i] = ships[3][i - 10];
+        }
+        for (int i = 12; i < 14; i++) {
+            cords[i] = ships[4][i - 12];
+        }
+        for (int i = 14; i < 16; i++) {
+            cords[i] = ships[5][i - 14];
+        }
+        for (int i = 16; i < 20; i++) {
+            cords[i] = ships[i - 10][0];
+        }
+        
         return cords;
     }
 
@@ -385,21 +553,74 @@ public class Main {
         return dir;
     }
 
-    public static int[] cpuChoice(HashMap<int[], Integer> moves, int[] last_move, int duration, int direction) {
+    public static int[] cpuChoice(int[] last_move, int duration, int direction, boolean hit, int dir_check,
+            int length) {
         int[] out = new int[2];
         int res = 0;
-        if (duration <= 25) {
-            res = duration * 2 - 2;
-            out[0] = res % 10;
-            out[1] = (res /10) * 2;
+        boolean oob = false;
+        if (hit) {
+            switch (direction) {
+                case 0:
+                    if (last_move[0] < 9) {
+                        out[1] = last_move[1];
+                        out[0] = last_move[0] + 1;
+                    } else {
+                        oob = true;
+                    }
+                    break;
+                case 1:
+                    if (last_move[1] < 9) {
+                        out[1] = last_move[1] + 1;
+                        out[0] = last_move[0];
+                    } else {
+                        oob = true;
+                    }
+                    break;
+                case 2:
+                    if (last_move[0] > 0) {
+                        out[1] = last_move[1];
+                        out[0] = last_move[0] - 1;
+                    } else {
+                        oob = true;
+                    }
+                    break;
+                case 3:
+                    if (last_move[1] > 0) {
+                        out[1] = last_move[1] - 1;
+                        out[0] = last_move[0];
+                    } else {
+                        oob = true;
+                    }
+                    break;
+                
+            }
+            if (oob) {
+                if (length > 1) {
+                    direction = 4;
+                }
+
+            }
+
+        } if (direction == 4 || !hit || length > 4) {
+            res = (duration- (duration/25) * 25) * 2 - 2;
+            if (duration <= 25) {
+                out[1] = res % 10;
+                out[0] = (res / 10) * 2;
+            } else if (duration <= 50) {
+                res = (duration - 25) * 2 - 2;
+                out[1] = res % 10 + 1;
+                out[0] = (res / 10) * 2 + 1;
+            } else if (duration <= 75) {
+                out[1] = res % 10;
+                out[0] = (res / 10) * 2 + 1;
+            }
+            else {
+                out[1] = res % 10 + 1;
+                out[0] = (res / 10) * 2;
+            }
+            
         }
-        else {
-            res = (duration - 25) * 2 -2;
-            out[0] = res % 10 + 1;
-            out[1] = (res / 10) * 2 + 1;
-        }
-        
-        
+
         return out;
     }
 
